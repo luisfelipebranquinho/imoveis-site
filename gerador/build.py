@@ -194,11 +194,18 @@ def gerar_site(cfg, imoveis, rel_origem, saida=SAIDA, agora=None):
     visiveis = ordenar(cfg, visiveis)
 
     (saida / "index.html").write_text(site.pagina_inicial(cfg, visiveis, atualizado), encoding="utf-8")
+    (saida / "dados" / "vitrine.json").write_text(
+        json.dumps(site.dados_vitrine(visiveis), ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    por_bairro = {}
+    for p in visiveis:
+        if p["fotos"]:
+            por_bairro.setdefault((p["bairro"], p["cidade"]), []).append(p)
     for p in visiveis:
         pasta = saida / "imovel" / p["codigo"]
         pasta.mkdir(parents=True, exist_ok=True)
         (pasta / "index.html").write_text(
-            site.pagina_imovel(cfg, p, semelhantes(p, visiveis), atualizado), encoding="utf-8")
+            site.pagina_imovel(cfg, p, semelhantes(p, por_bairro.get((p["bairro"], p["cidade"]), []) or visiveis[:60]),
+                              atualizado), encoding="utf-8")
     (saida / "404.html").write_text(site.pagina_404(cfg), encoding="utf-8")
     (saida / ".nojekyll").write_text("", encoding="utf-8")
 
@@ -307,6 +314,12 @@ def principal():
 
     rel = gerar_site(cfg, imoveis, rel_origem, agora=agora)
     feed = rel["feeds"]["vrsync.xml"]
+    sem_tipo = {}
+    for p in imoveis:
+        if p["tipo"] not in vrsync.TIPOS_VRSYNC:
+            sem_tipo[p["tipo"]] = sem_tipo.get(p["tipo"], 0) + 1
+    if sem_tipo:
+        aviso(f"Tipos sem correspondência no VRSync (ficam fora do feed): {sem_tipo}", "warning")
     aviso(f"Site com {rel['no_site']} imóveis; feed geral com {feed['exportados']} anúncios "
           f"({feed['rejeitados']} rejeitados: sem endereço {feed['sem_endereco']}, sem área {feed['sem_area']}, "
           f"sem preço {feed['sem_preco']}, sem foto {feed['sem_foto']}, tipo {feed['tipo_sem_mapeamento']})")

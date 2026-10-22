@@ -48,7 +48,8 @@ def validar_url(bruta: str, exigir_anuncio=True):
         return None, "Endereço fora do site da Gralha Imóveis."
     if exigir_anuncio and not ANUNCIO.match(urllib.parse.unquote(u.path)):
         return None, "Não é um anúncio de venda individual (/imovel/venda+.../número)."
-    limpa = urlunparse(("https", "www.gralhaimoveis.com.br", u.path, "", u.query if not exigir_anuncio else "", ""))
+    caminho = urllib.parse.quote(urllib.parse.unquote(u.path), safe="/+,-._~!$&'()*;=:@")
+    limpa = urlunparse(("https", "www.gralhaimoveis.com.br", caminho, "", u.query if not exigir_anuncio else "", ""))
     return limpa, None
 
 

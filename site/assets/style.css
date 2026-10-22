@@ -125,6 +125,8 @@ button, select { font: inherit; color: inherit; }
 .card-preco { font-size: 1.35rem; font-weight: 700; color: var(--tinta); letter-spacing: -0.01em; margin-top: .2rem; }
 .fatos { list-style: none; margin: .6rem 0 0; padding: .7rem 0 0; border-top: 1px solid var(--linha); display: flex; flex-wrap: wrap; gap: .4rem 1rem; color: var(--suave); font-size: .92rem; }
 .fatos li { display: inline-flex; align-items: center; gap: .35rem; }
+.mais { display: flex; justify-content: center; margin-top: 2rem; }
+.mais [hidden] { display: none; }
 .vazio { padding: 3rem 1rem; text-align: center; color: var(--suave); }
 
 /* Rodapé / contato */

@@ -6,6 +6,8 @@ from urllib.parse import quote
 
 from .textos import brl, inteiro_ou_decimal
 
+POR_PAGINA = 24
+
 ROTULO_TIPO = {
     "apartamento": "Apartamento", "casa": "Casa", "casa-em-condominio": "Casa em condomínio",
     "sobrado": "Sobrado", "cobertura": "Cobertura", "studio": "Studio", "loft": "Loft",
@@ -111,6 +113,16 @@ def card(p, base, destaque_principal=False):
 </article>"""
 
 
+def dados_vitrine(imoveis):
+    """Versão compacta dos imóveis para filtrar e paginar no navegador."""
+    return [{
+        "c": p["codigo"], "t": p["tipo"], "tr": tipo_rotulo(p["tipo"]), "b": p["bairro"], "ci": p["cidade"],
+        "p": p.get("preco") or 0, "a": p.get("area") or 0, "q": p.get("quartos"), "bh": p.get("banheiros"),
+        "v": p.get("vagas"), "f": p["fotos"][0] if p["fotos"] else "",
+        "d": 1 if p.get("destaque") else 0, "l": 1 if p.get("lancamento") else 0,
+    } for p in imoveis]
+
+
 def _cabeca(cfg, titulo, descricao, base, canonico, imagem=None):
     fonte = ("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..800"
              "&display=swap")
@@ -197,7 +209,9 @@ def pagina_inicial(cfg, imoveis, atualizado):
 
     opcoes_tipo = "".join(f'<option value="{e(t)}">{e(tipo_rotulo(t))}</option>' for t in tipos)
     opcoes_bairro = "".join(f'<option value="{e(b)}">{e(b)}</option>' for b in bairros)
-    cartoes = "".join(card(p, base) for p in imoveis)
+    # Só a primeira página vai no HTML; o restante é carregado sob demanda (dados/vitrine.json).
+    cartoes = "".join(card(p, base) for p in imoveis[:POR_PAGINA])
+    icones_js = "".join(f'<span data-icone="{n}">{icone(n)}</span>' for n in ("area", "quartos", "banheiros", "vagas"))
     total = len(imoveis)
     descricao = (f"{total} imóveis à venda em {cfg.get('cidade_principal', 'Florianópolis')} e região, "
                  f"com fotos e atendimento direto com {cfg.get('responsavel') or cfg['nome']}.")
@@ -240,8 +254,10 @@ def pagina_inicial(cfg, imoveis, atualizado):
       </form>
       <p class="contagem" id="contagem" aria-live="polite">{total} imóve{'is' if total != 1 else 'l'}</p>
     </div>
-    <div class="grade" id="grade">{cartoes}</div>
+    <div class="grade" id="grade" data-dados="{base}dados/vitrine.json" data-por-pagina="{POR_PAGINA}">{cartoes}</div>
+    <template id="icones">{icones_js}</template>
     <p class="vazio" id="sem-resultado" hidden>Nenhum imóvel com esses filtros. <button type="button" class="link" id="limpar">Limpar filtros</button></p>
+    <div class="mais"><button type="button" class="botao botao-contorno" id="mostrar-mais"{' hidden' if total <= POR_PAGINA else ''}>Mostrar mais imóveis</button></div>
     {vazio}
   </section>
 </main>

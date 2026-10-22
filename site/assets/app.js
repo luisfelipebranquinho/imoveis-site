@@ -2,54 +2,106 @@
 (function () {
   "use strict";
 
-  // ---------- Filtros da página inicial ----------
+  // ---------- Vitrine: filtros e paginação ----------
+  // A primeira página vem pronta no HTML; a lista completa é lida de dados/vitrine.json.
   var form = document.getElementById("filtros");
   var grade = document.getElementById("grade");
   if (form && grade) {
-    var cards = Array.prototype.slice.call(grade.querySelectorAll(".card"));
     var contagem = document.getElementById("contagem");
     var semResultado = document.getElementById("sem-resultado");
+    var botaoMais = document.getElementById("mostrar-mais");
+    var porPagina = Number(grade.getAttribute("data-por-pagina")) || 24;
+    var icones = {};
+    document.querySelectorAll("#icones")[0].content.querySelectorAll("[data-icone]").forEach(function (s) {
+      icones[s.getAttribute("data-icone")] = s.innerHTML;
+    });
+    var todos = null, lista = [], mostrados = 0, carregando = null;
+
+    function carregar() {
+      if (!carregando) {
+        carregando = fetch(grade.getAttribute("data-dados"))
+          .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+          .then(function (d) { todos = d; return d; });
+      }
+      return carregando;
+    }
+    function esc(s) {
+      return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+      });
+    }
+    function brl(v) { return v ? "R$ " + Math.round(v).toLocaleString("pt-BR") : "Valor sob consulta"; }
+    function plural(n, um, varios) { return n + " " + (n === 1 ? um : varios); }
+    function area(n) { return String(n).replace(".", ",") + " m²"; }
+    function fato(nome, texto) { return "<li>" + icones[nome] + "<span>" + esc(texto) + "</span></li>"; }
+    function cartao(p) {
+      var fatos = (p.a ? fato("area", area(p.a)) : "") +
+        (p.q != null ? fato("quartos", plural(p.q, "quarto", "quartos")) : "") +
+        (p.bh != null ? fato("banheiros", plural(p.bh, "banheiro", "banheiros")) : "") +
+        (p.v != null ? fato("vagas", plural(p.v, "vaga", "vagas")) : "");
+      var selos = (p.d ? '<span class="selo">Destaque</span>' : "") + (p.l ? '<span class="selo selo-claro">Lançamento</span>' : "");
+      var img = p.f ? '<img src="' + esc(p.f) + '" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">'
+        : '<span class="sem-foto">Fotos em breve</span>';
+      return '<article class="card"><a class="card-link" href="imovel/' + encodeURIComponent(p.c) + '/">' +
+        '<div class="card-foto">' + img + '<div class="selos">' + selos + "</div></div>" +
+        '<div class="card-corpo"><p class="card-local">' + esc(p.b) + ", " + esc(p.ci) + "</p>" +
+        '<h3 class="card-titulo">' + esc(p.tr) + (p.a ? " com " + area(p.a) : "") + "</h3>" +
+        '<p class="card-preco">' + brl(p.p) + '</p><ul class="fatos">' + fatos + "</ul></div></a></article>";
+    }
+    function filtros() {
+      var f = {};
+      Array.prototype.forEach.call(form.elements, function (el) { if (el.name) f[el.name] = el.value; });
+      return f;
+    }
+    function mostrarMais() {
+      var html = lista.slice(mostrados, mostrados + porPagina).map(cartao).join("");
+      grade.insertAdjacentHTML("beforeend", html);
+      mostrados = Math.min(lista.length, mostrados + porPagina);
+      botaoMais.hidden = mostrados >= lista.length;
+    }
+    function aplicar() {
+      var f = filtros();
+      lista = todos.filter(function (p) {
+        return (!f.tipo || p.t === f.tipo) && (!f.bairro || p.b === f.bairro) &&
+          (!f.preco || (p.p > 0 && p.p <= Number(f.preco))) &&
+          (!f.quartos || (p.q || 0) >= Number(f.quartos));
+      });
+      if (f.ordem === "menor") lista.sort(function (a, b) { return (a.p || Infinity) - (b.p || Infinity); });
+      if (f.ordem === "maior") lista.sort(function (a, b) { return b.p - a.p; });
+      if (f.ordem === "area") lista.sort(function (a, b) { return b.a - a.a; });
+      grade.innerHTML = "";
+      mostrados = 0;
+      mostrarMais();
+      contagem.textContent = plural(lista.length, "imóvel", "imóveis");
+      semResultado.hidden = lista.length !== 0;
+
+      var q = new URLSearchParams();
+      Object.keys(f).forEach(function (k) { if (f[k]) q.set(k, f[k]); });
+      history.replaceState(null, "", location.pathname + (q.toString() ? "?" + q : "") + location.hash);
+    }
+    function aoMudar() {
+      contagem.textContent = "Carregando…";
+      carregar().then(aplicar).catch(function () {
+        contagem.textContent = "Não foi possível carregar a lista. Recarregue a página.";
+      });
+    }
 
     var params = new URLSearchParams(location.search);
     Array.prototype.forEach.call(form.elements, function (el) {
       if (el.name && params.get(el.name)) el.value = params.get(el.name);
     });
-
-    function aplicar() {
-      var f = {};
-      Array.prototype.forEach.call(form.elements, function (el) { if (el.name) f[el.name] = el.value; });
-      var visiveis = 0;
-      cards.forEach(function (c) {
-        var d = c.dataset;
-        var ok = (!f.tipo || d.tipo === f.tipo) &&
-          (!f.bairro || d.bairro === f.bairro) &&
-          (!f.preco || (Number(d.preco) > 0 && Number(d.preco) <= Number(f.preco))) &&
-          (!f.quartos || Number(d.quartos) >= Number(f.quartos));
-        c.hidden = !ok;
-        if (ok) visiveis++;
-      });
-      var ordem = cards.slice().sort(function (a, b) {
-        var x = a.dataset, y = b.dataset;
-        if (f.ordem === "menor") return (Number(x.preco) || Infinity) - (Number(y.preco) || Infinity);
-        if (f.ordem === "maior") return Number(y.preco) - Number(x.preco);
-        if (f.ordem === "area") return Number(y.area) - Number(x.area);
-        return Number(x.ordem) - Number(y.ordem);
-      });
-      ordem.forEach(function (c) { grade.appendChild(c); });
-      contagem.textContent = visiveis + (visiveis === 1 ? " imóvel" : " imóveis");
-      semResultado.hidden = visiveis !== 0 || cards.length === 0;
-
-      var q = new URLSearchParams();
-      Object.keys(f).forEach(function (k) { if (f[k]) q.set(k, f[k]); });
-      var nova = location.pathname + (q.toString() ? "?" + q : "") + location.hash;
-      history.replaceState(null, "", nova);
-    }
-
-    form.addEventListener("change", aplicar);
+    form.addEventListener("change", aoMudar);
     form.addEventListener("submit", function (ev) { ev.preventDefault(); });
+    botaoMais.addEventListener("click", function () {
+      botaoMais.disabled = true;
+      carregar().then(function () {
+        if (!lista.length && !mostrados) { lista = todos; mostrados = grade.children.length; }
+        mostrarMais();
+      }).finally(function () { botaoMais.disabled = false; });
+    });
     var limpar = document.getElementById("limpar");
-    if (limpar) limpar.addEventListener("click", function () { form.reset(); aplicar(); });
-    if (params.toString()) aplicar();
+    if (limpar) limpar.addEventListener("click", function () { form.reset(); aoMudar(); });
+    if (params.toString()) aoMudar();
   }
 
   // ---------- Descrição longa ----------

@@ -1,0 +1,17 @@
+[
+  {
+    "nome": "Exemplo: imóveis até R$ 1 milhão",
+    "slug": "ate-1-milhao",
+    "descricao": "Feed de exemplo. Para ativar, mude \"ativo\" para true.",
+    "ativo": false,
+    "preco_minimo": null,
+    "preco_maximo": 1000000,
+    "bairros": [],
+    "tipos": [],
+    "somente_destaques": false,
+    "somente_lancamentos": false,
+    "selecao": "filtros",
+    "incluir_codigos": [],
+    "excluir_codigos": []
+  }
+]

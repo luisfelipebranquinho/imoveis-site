@@ -1,0 +1,4 @@
+# Links de anúncios da Gralha que devem entrar no site mesmo que a busca automática não encontre.
+# Um link por linha. Linhas começando com # são ignoradas.
+# Exemplo:
+# https://www.gralhaimoveis.com.br/imovel/venda+casa+4-quartos+centro-florianopolis+florianopolis+sc+346m2+rs2290000,00/165130823

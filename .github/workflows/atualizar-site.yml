@@ -1,0 +1,59 @@
+name: Atualizar site
+
+on:
+  schedule:
+    - cron: "17 9 * * *" # todo dia às 06:17 (horário de Brasília)
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      forcar:
+        description: "Publicar mesmo se o número de imóveis cair muito"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  gerar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Instalar dependências
+        run: pip install -r requirements.txt
+
+      - name: Testes
+        run: python -m unittest discover tests
+
+      - name: Ler imóveis da Gralha e gerar o site
+        env:
+          FORCAR: ${{ inputs.forcar && '1' || '' }}
+        run: python -m gerador.build
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: publicar
+
+  publicar:
+    needs: gerar
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

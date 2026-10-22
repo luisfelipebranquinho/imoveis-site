@@ -145,10 +145,11 @@ def _locs(xml_texto: str):
     return locs, []
 
 
-def descobrir(baixar_fn=baixar, max_paginas=400, pausa=0.3, log=print):
+def descobrir(baixar_fn=baixar, max_paginas=150, pausa=0.3, log=print, limite_segundos=360):
     """Encontra URLs de anúncios de venda. Devolve (urls, resumo)."""
     encontrados = {}
-    resumo = {"sitemap": 0, "listagens": 0, "paginas_visitadas": 0}
+    resumo = {"sitemap": 0, "listagens": 0, "paginas_visitadas": 0, "falhas": {}}
+    prazo = time.time() + limite_segundos
 
     # 1) Sitemap (e sitemaps filhos)
     fila_sm, vistos_sm = deque([ORIGEM + "/sitemap.xml"]), set()
@@ -160,6 +161,7 @@ def descobrir(baixar_fn=baixar, max_paginas=400, pausa=0.3, log=print):
         r = baixar_fn(sm, tipos_aceitos=("xml", "text/plain"))
         if r.tipo != "ok":
             log(f"  sitemap {sm}: {r.mensagem}")
+            resumo["falhas"][urlparse(sm).path] = r.mensagem
             continue
         paginas, filhos = _locs(r.texto)
         fila_sm.extend(filhos)
@@ -171,13 +173,15 @@ def descobrir(baixar_fn=baixar, max_paginas=400, pausa=0.3, log=print):
 
     # 2) Páginas de listagem do próprio site (complementa um sitemap desatualizado)
     fila, vistas = deque([ORIGEM + "/", ORIGEM + "/venda"]), set()
-    while fila and len(vistas) < max_paginas:
+    while fila and len(vistas) < max_paginas and time.time() < prazo:
         pagina = fila.popleft()
         if pagina in vistas:
             continue
         vistas.add(pagina)
         r = baixar_fn(pagina)
         if r.tipo != "ok":
+            if len(resumo["falhas"]) < 6:
+                resumo["falhas"][urlparse(pagina).path or "/"] = r.mensagem
             continue
         for href in links_da_pagina(r.texto):
             anuncio = normalizar_anuncio(href, base=pagina.rstrip("/"))

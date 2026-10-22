@@ -29,6 +29,19 @@ def log(msg):
     print(msg, flush=True)
 
 
+def aviso(msg, nivel="notice"):
+    """Mensagem que aparece no resumo da execução do GitHub Actions (anotação)."""
+    if os.environ.get("GITHUB_ACTIONS"):
+        print(f"::{nivel}::{msg.replace(chr(10), ' | ')}", flush=True)
+    else:
+        log(msg)
+
+
+def encerrar(msg):
+    aviso(msg, "error")
+    sys.exit(msg)
+
+
 def carregar_json(caminho, padrao):
     try:
         return json.loads(Path(caminho).read_text(encoding="utf-8"))
@@ -267,12 +280,19 @@ def principal():
     else:
         anterior = estado_anterior(cfg)
         log("Procurando anúncios de venda na Gralha Imóveis...")
+        inicio = time.time()
         urls, resumo_desc = fonte.descobrir(log=log)
-        log(f"  encontrados: {len(urls)} ({resumo_desc})")
+        aviso(f"Descoberta: {len(urls)} anúncios em {time.time() - inicio:.0f}s {resumo_desc}")
         conhecidos = [p["url_origem"] for p in anterior.get("imoveis", [])]
         todos = list(dict.fromkeys(urls + links_extras() + conhecidos))
         log(f"Lendo {len(todos)} anúncios...")
+        inicio = time.time()
         resultados = buscar_anuncios(todos, fonte.baixar)
+        contagem = {}
+        for _, tipo, msg, _ in resultados:
+            contagem[tipo] = contagem.get(tipo, 0) + 1
+        exemplos = list(dict.fromkeys(msg for _, tipo, msg, _ in resultados if tipo != "ok"))[:4]
+        aviso(f"Leitura: {contagem} em {time.time() - inicio:.0f}s. Exemplos de problema: {exemplos}")
 
     imoveis, rel_origem = mesclar(cfg, anterior, resultados, agora_iso)
     rel_origem["descoberta"] = resumo_desc
@@ -280,12 +300,16 @@ def principal():
     # Trava de segurança: se a origem falhar em massa, não apaga o site publicado.
     qtd_anterior = len(anterior.get("imoveis", []))
     if not imoveis:
-        sys.exit("Nenhum imóvel lido. O site publicado foi mantido como estava.")
+        encerrar("Nenhum imóvel lido. O site publicado foi mantido como estava.")
     if qtd_anterior >= 10 and len(imoveis) < qtd_anterior * 0.5 and not os.environ.get("FORCAR"):
-        sys.exit(f"Queda brusca ({qtd_anterior} -> {len(imoveis)} imóveis). Publicação cancelada por segurança; "
+        encerrar(f"Queda brusca ({qtd_anterior} -> {len(imoveis)} imóveis). Publicação cancelada por segurança; "
                  "rode manualmente com 'forçar' se for esperado.")
 
     rel = gerar_site(cfg, imoveis, rel_origem, agora=agora)
+    feed = rel["feeds"]["vrsync.xml"]
+    aviso(f"Site com {rel['no_site']} imóveis; feed geral com {feed['exportados']} anúncios "
+          f"({feed['rejeitados']} rejeitados: sem endereço {feed['sem_endereco']}, sem área {feed['sem_area']}, "
+          f"sem preço {feed['sem_preco']}, sem foto {feed['sem_foto']}, tipo {feed['tipo_sem_mapeamento']})")
     texto = resumo_markdown(rel)
     log(texto)
     if os.environ.get("GITHUB_STEP_SUMMARY"):
@@ -294,4 +318,12 @@ def principal():
 
 
 if __name__ == "__main__":
-    principal()
+    try:
+        principal()
+    except SystemExit:
+        raise
+    except Exception as erro:  # registra o motivo no resumo da execução
+        import traceback
+        aviso(f"Erro inesperado: {type(erro).__name__}: {erro} | "
+              + " / ".join(traceback.format_exc().strip().splitlines()[-4:]), "error")
+        raise

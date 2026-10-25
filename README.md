@@ -17,7 +17,9 @@ Abra o arquivo, clique no lápis (Edit), altere e clique em **Commit changes**. 
 
 | Arquivo | Para quê |
 |---|---|
-| `config.json` | Nome, WhatsApp (com 55 + DDD), e-mail, telefone, CRECI, frases da página inicial, mensagem do WhatsApp |
+| `config.json` | Nome, WhatsApp (com 55 + DDD), e-mail, telefone, horário, CRECI, Instagram/Facebook, frases da página inicial, mensagem do WhatsApp |
+| `config.json` → `imagem_capa` | Link de uma foto para o topo da página (vazio = foto de um imóvel em destaque) |
+| `config.json` → `alto_padrao_a_partir` | Valor mínimo para entrar no carrossel "Alto padrão" |
 | `config.json` → `destaques` | Códigos dos imóveis que aparecem primeiro, ex.: `["32819", "45569"]` |
 | `config.json` → `ocultar` | Códigos que não devem aparecer no site nem no feed |
 | `config.json` → `lancamentos` | Códigos marcados como lançamento |

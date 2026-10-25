@@ -17,6 +17,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from . import fonte, site, vrsync
+from .regioes import regiao
 from .extrator import extrair
 
 RAIZ = Path(__file__).resolve().parent.parent
@@ -123,7 +124,7 @@ def mesclar(cfg, anterior, resultados, agora_iso):
             novo["ausencias"] = 0
             comparar = lambda d: {k: v for k, v in d.items()
                                   if k not in ("verificado_em", "ausencias", "primeira_vez", "atualizado_em",
-                                               "destaque", "lancamento", "_ordem")}
+                                               "destaque", "lancamento", "_ordem", "regiao")}
             if not velho:
                 rel["novos"] += 1
                 novo["atualizado_em"] = agora_iso
@@ -163,6 +164,7 @@ def ordenar(cfg, imoveis):
     for p in imoveis:
         p["destaque"] = p["codigo"] in destaques
         p["lancamento"] = p["codigo"] in cfg["lancamentos"]
+        p["regiao"] = regiao(p["bairro"], p["cidade"])
     # Destaques na ordem do config; depois os demais, com foto primeiro e mais recentes antes.
     fixos = sorted((p for p in imoveis if p["destaque"]), key=lambda p: destaques.index(p["codigo"]))
     resto = sorted((p for p in imoveis if not p["destaque"]),
@@ -174,7 +176,7 @@ def ordenar(cfg, imoveis):
     return final
 
 
-def semelhantes(p, todos, n=3):
+def semelhantes(p, todos, n=8):
     def pontos(q):
         return ((q["bairro"] == p["bairro"]) * 2 + (q["tipo"] == p["tipo"])
                 - abs((q.get("preco") or 0) - (p.get("preco") or 0)) / max(p.get("preco") or 1, 1))

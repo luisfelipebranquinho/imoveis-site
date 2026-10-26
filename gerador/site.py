@@ -1,6 +1,7 @@
 """Montagem das páginas HTML do site (home, página de cada imóvel e 404)."""
 
 import json
+import re
 from html import escape
 from urllib.parse import quote
 
@@ -248,19 +249,33 @@ def _rodape(cfg, base, atualizado):
 
 # ---------------------------------------------------------------- página inicial
 
+RESIDENCIAIS = ("casa", "apartamento", "cobertura", "casa-em-condominio", "sobrado")
+
+
+def foto_ok(u):
+    return bool(re.fullmatch(r"https://[^\s\"'<>]+/api/image/\d+\.(?:jpe?g|png|webp)", u or "", re.I))
+
+
+def melhor_capa(imoveis):
+    """Foto para capas: casas e apartamentos primeiro (evita terrenos e mapas), depois o mais caro."""
+    com_foto = [p for p in imoveis if p["fotos"] and foto_ok(p["fotos"][0])]
+    if not com_foto:
+        return None
+    return max(com_foto, key=lambda p: (p["tipo"] in RESIDENCIAIS, len(p["fotos"]) >= 5, p.get("preco") or 0))
+
+
 def _regioes_html(imoveis, base):
     grupos = {}
     for p in imoveis:
         grupos.setdefault(p.get("regiao") or "Outras", []).append(p)
     ordem = [r for r in ORDEM_REGIOES if r in grupos]
     ordem += sorted((r for r in grupos if r not in ordem), key=lambda r: -len(grupos[r]))
-    ordem = [r for r in ordem if len(grupos[r]) >= 3][:8]
+    ordem = [r for r in ordem if len(grupos[r]) >= 3][:7]  # 1 bloco alto + 6 = grade completa
     if len(ordem) < 2:
         return ""
     tiles = []
     for i, r in enumerate(ordem):
-        com_foto = [p for p in grupos[r] if p["fotos"]]
-        capa = max(com_foto, key=lambda p: p.get("preco") or 0) if com_foto else None
+        capa = melhor_capa(grupos[r])
         img = (f'<img src="{e(capa["fotos"][0])}" alt="" loading="lazy" referrerpolicy="no-referrer">'
                if capa else "")
         tiles.append(f'<a class="regiao{" regiao-alta" if i == 0 else ""}" href="{base}?regiao={quote(r)}#imoveis">'
@@ -281,7 +296,8 @@ def pagina_inicial(cfg, imoveis, atualizado):
     destaques = [p for p in com_foto if p.get("destaque")]
     capa_url = cfg.get("imagem_capa") or ""
     if not capa_url and com_foto:
-        capa_url = (destaques[0] if destaques else max(com_foto, key=lambda p: p.get("preco") or 0))["fotos"][0]
+        escolhida = destaques[0] if destaques and foto_ok(destaques[0]["fotos"][0]) else melhor_capa(imoveis)
+        capa_url = escolhida["fotos"][0] if escolhida else ""
 
     tipos = sorted({p["tipo"] for p in imoveis}, key=tipo_rotulo)
     bairros = sorted({p["bairro"] for p in imoveis if p["bairro"]})

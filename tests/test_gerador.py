@@ -74,6 +74,14 @@ class TestExtrator(unittest.TestCase):
         ids = [int(u.rsplit("/", 1)[1].split(".")[0]) for u in p["fotos"]]
         self.assertEqual(ids, sorted(ids))
 
+    def test_capa_sem_numero_e_descartada(self):
+        html, url = carregar("32819")
+        html = html.replace("http://gralha2.inforcedata.com.br/api/image/76519282.jpg",
+                            "https://gralha2.inforcedata.com.br/api/image/.jpg")
+        p = extrair(html, url)["imovel"]
+        self.assertNotIn("https://gralha2.inforcedata.com.br/api/image/.jpg", p["fotos"])
+        self.assertTrue(p["fotos"])
+
     def test_taxas_numero_e_whitelist(self):
         p = extrair(*carregar("45569"))["imovel"]
         self.assertEqual((p["condominio"], p["iptu"], p["periodo_iptu"]), (650, 1800, "Yearly"))

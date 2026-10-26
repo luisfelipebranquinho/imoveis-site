@@ -324,6 +324,8 @@ def extrair(html: str, url: str) -> dict:
     og_img = sopa.select_one('meta[property="og:image"]')
     capa = limpar(og_img.get("content", "")) if og_img else ""
     capa = re.sub(r"^http://", "https://", capa, flags=re.I)
+    if not _FOTO.fullmatch(capa):  # a origem às vezes publica a capa sem o número da foto (".../image/.jpg")
+        capa = ""
     galeria = {re.sub(r"^http://", "https://", u, flags=re.I) for u in _FOTO.findall(html)}
 
     def id_foto(u):

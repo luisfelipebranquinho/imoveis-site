@@ -211,7 +211,7 @@ def _topo(cfg, base):
     return f"""
 <header class="topo">
   <div class="topo-in">
-    <a class="marca" href="{base}" aria-label="{e(marca_nome(cfg))} · {e(cfg['nome'])}, página inicial">{monograma()}<span class="marca-texto"><span class="marca-nome">{e(marca_nome(cfg))}</span><span class="marca-script">{e(cfg['nome'])}</span></span></a>
+    <a class="marca" href="{base}" aria-label="{e(marca_nome(cfg))} · {e(cfg['nome'])}, página inicial">{monograma()}<span class="marca-texto"><span class="marca-nome">{e(marca_nome(cfg))}</span><span class="marca-script">{e(cfg['nome'])}</span>{f'<span class="marca-comp">{e(cfg["marca_complemento"])}</span>' if cfg.get('marca_complemento') else ''}</span></a>
     <nav class="topo-nav" aria-label="Principal">
       <a href="{base}#imoveis">Imóveis</a>
       <a href="{base}#regioes">Regiões</a>
@@ -262,6 +262,7 @@ def _rodape(cfg, base, atualizado):
         {f'<p class="assinatura-creci">{e(cfg["creci"])}</p>' if cfg.get('creci') else ''}
         <span class="fio" aria-hidden="true"></span>
         <p class="assinatura-script">{e(cfg['nome'])}</p>
+        {f'<p class="assinatura-comp">{e(cfg["marca_complemento"])}</p>' if cfg.get('marca_complemento') else ''}
         {redes_html}
       </div>
     </div>
@@ -361,6 +362,7 @@ def pagina_inicial(cfg, imoveis, atualizado):
   <section class="hero"{estilo_capa}>
     <div class="hero-in">
       <p class="hero-assinatura">{e(cfg['nome'])}</p>
+      {f'<p class="hero-comp">{e(cfg["marca_complemento"])}</p>' if cfg.get('marca_complemento') else ''}
       <h1>{e(cfg.get('frase_principal') or 'Encontre o seu imóvel na Grande Florianópolis')}</h1>
       <p class="hero-sub">{e(cfg.get('frase_apoio') or f'{total} imóveis à venda, de studios a casas de alto padrão.')}</p>
       <form class="busca" id="busca" action="{base}" role="search" aria-label="Buscar imóveis">

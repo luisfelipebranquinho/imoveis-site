@@ -249,7 +249,7 @@ def _rodape(cfg, base, atualizado):
         if cfg.get(nome):
             redes.append(f'<a href="{e(cfg[nome])}" target="_blank" rel="noopener">{nome.capitalize()}</a>')
     redes_html = f'<p class="redes">{" ".join(redes)}</p>' if redes else ""
-    creci = f" · CRECI {e(cfg['creci'])}" if cfg.get("creci") else ""
+    creci = f" · {e(cfg['creci'])}" if cfg.get("creci") else ""
     parceria = f"<p>{e(cfg['texto_parceria'])}</p>" if cfg.get("texto_parceria") else ""
     return f"""
 <footer class="rodape" id="contato">
@@ -259,6 +259,7 @@ def _rodape(cfg, base, atualizado):
       <div class="assinatura-texto">
         <p class="assinatura-nome">{e(marca_nome(cfg))}</p>
         <p class="assinatura-cargo">{e(cfg.get('marca_descricao') or 'Corretora de imóveis')}</p>
+        {f'<p class="assinatura-creci">{e(cfg["creci"])}</p>' if cfg.get('creci') else ''}
         <span class="fio" aria-hidden="true"></span>
         <p class="assinatura-script">{e(cfg['nome'])}</p>
         {redes_html}
@@ -528,7 +529,7 @@ def pagina_imovel(cfg, p, semelhantes, atualizado):
       {video}
     </div>
     <aside class="contato-card" aria-labelledby="t-contato">
-      <div class="contato-topo">{monograma("escuro", "contato-mono")}<div><p class="contato-nome">{e(marca_nome(cfg))}</p><p class="contato-cargo">{e(cfg.get('marca_descricao') or 'Corretora de imóveis')}</p></div></div>
+      <div class="contato-topo">{monograma("escuro", "contato-mono")}<div><p class="contato-nome">{e(marca_nome(cfg))}</p><p class="contato-cargo">{e(cfg.get('marca_descricao') or 'Corretora de imóveis')}{(' · ' + e(cfg['creci'])) if cfg.get('creci') else ''}</p></div></div>
       <h2 id="t-contato">Gostou deste imóvel?</h2>
       <p>Fale com a {e(marca_nome(cfg))} e agende uma visita.</p>
       <form class="form-whats" id="form-whats" data-numero="{e(numero_whatsapp(cfg))}" action="https://wa.me/{e(numero_whatsapp(cfg))}" target="_blank">

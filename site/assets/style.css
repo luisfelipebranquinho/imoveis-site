@@ -160,6 +160,7 @@ button, select, input, textarea { font: inherit; color: inherit; }
 .assinatura-texto { display: grid; gap: .35rem; justify-items: start; }
 .assinatura-nome { font-family: var(--serifa); font-weight: 600; font-size: 1.7rem; letter-spacing: .12em; text-transform: uppercase; line-height: 1.1; background: var(--degrade-ouro); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .assinatura-cargo { font-size: .78rem; letter-spacing: .38em; text-transform: uppercase; color: #e7dfd1; }
+.assinatura-creci { font-size: .82rem; color: var(--ouro); letter-spacing: .08em; }
 .fio { display: block; width: 90px; height: 1.5px; background: var(--ouro); margin: .3rem 0; }
 .assinatura-script { font-family: var(--script); font-size: 2.3rem; line-height: 1.1; color: var(--ouro-claro); }
 .rodape h2 { color: var(--ouro-claro); font-size: 1rem; letter-spacing: .14em; margin-bottom: 1rem; }
@@ -168,6 +169,7 @@ button, select, input, textarea { font: inherit; color: inherit; }
 .rodape-lista .icone { color: var(--ouro); }
 .rodape a { color: #fff; }
 .redes { margin-top: .6rem; display: flex; gap: 1rem; }
+.redes a { color: var(--ouro-claro); font-weight: 600; text-decoration-color: var(--ouro); }
 .rodape-base { max-width: var(--largura); margin: 0 auto; padding: 1.25rem 1rem 2rem; border-top: 1px solid rgba(205,166,123,.25); display: grid; gap: .3rem; font-size: .82rem; color: #8b9a97; }
 
 /* Página do imóvel */

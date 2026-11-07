@@ -37,29 +37,15 @@ ICONES = {
     "relogio": '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
 }
 
-# Monograma PL com onda (logo da Patrícia Lopes · Ocean Prime), desenhado em vetor.
-_MONO_PATHS = (
-    '<path d="M54 22 C108 24 112 94 58 100 C90 88 90 32 54 30 Z" fill="{c}"/>'
-    '<rect x="40" y="48" width="26" height="3.5" fill="{c}"/>'
-    '<path d="M46 51 H60 V128 C56 131 50 132 46 132 Z" fill="{c}"/>'
-    '<path d="M46 132 C70 132 82 102 100 104 C116 106 124 126 152 122 C128 136 112 118 98 116 '
-    'C84 114 74 136 46 136 Z" fill="{onda}"/>'
-)
-_contador = [0]
+# Marca PL com casa e onda (logo oficial da Patrícia Lopes Imóveis), em SVG dentro de site/assets/marca.
+# Os caminhos são relativos à página; _BASE guarda o prefixo ("./" ou "../../") da página sendo gerada.
+_BASE = ["./"]
 
 
 def monograma(variante="escuro", classe="monograma"):
-    """variante 'escuro': letras esmeralda e onda dourada (fundo claro); 'dourado': tudo em ouro (fundo escuro)."""
-    if variante == "dourado":
-        _contador[0] += 1
-        gid = f"ouro{_contador[0]}"
-        defs = (f'<defs><linearGradient id="{gid}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ecd4a8"/>'
-                f'<stop offset=".4" stop-color="#cda67b"/><stop offset=".72" stop-color="#a78258"/>'
-                f'<stop offset="1" stop-color="#ecd4a8"/></linearGradient></defs>')
-        corpo = _MONO_PATHS.format(c=f"url(#{gid})", onda=f"url(#{gid})")
-    else:
-        defs, corpo = "", _MONO_PATHS.format(c="#04262a", onda="#a78258")
-    return f'<svg class="{classe}" viewBox="34 18 122 122" aria-hidden="true">{defs}{corpo}</svg>'
+    """variante 'escuro': para fundo claro (onda azul); 'dourado': para fundo escuro (onda clara)."""
+    arq = "marca-pl-clara.svg" if variante == "dourado" else "marca-pl.svg"
+    return f'<img class="{classe}" src="{_BASE[0]}assets/marca/{arq}" alt="" width="712" height="422">'
 
 
 def marca_nome(cfg):
@@ -181,8 +167,8 @@ def carrossel(id_, titulo, itens, base, fundo=False, link_todos=None):
 # ---------------------------------------------------------------- partes comuns
 
 def _cabeca(cfg, titulo, descricao, base, canonico, imagem=None):
-    fonte = ("https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Montserrat:wght@400;500;600;700"
-             "&family=Pinyon+Script&display=swap")
+    _BASE[0] = base
+    fonte = "https://fonts.googleapis.com/css2?family=Marcellus&family=Montserrat:wght@400;500;600;700&display=swap"
     og_img = f'<meta property="og:image" content="{e(imagem)}">' if imagem else ""
     return f"""<!doctype html>
 <html lang="pt-BR">
@@ -197,7 +183,7 @@ def _cabeca(cfg, titulo, descricao, base, canonico, imagem=None):
 <meta property="og:type" content="website">
 <meta property="og:url" content="{e(canonico)}">
 {og_img}
-<meta name="theme-color" content="#04262a">
+<meta name="theme-color" content="#122a42">
 <link rel="icon" href="{base}assets/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -211,7 +197,7 @@ def _topo(cfg, base):
     return f"""
 <header class="topo">
   <div class="topo-in">
-    <a class="marca" href="{base}" aria-label="{e(marca_nome(cfg))} · {e(cfg['nome'])}, página inicial">{monograma()}<span class="marca-texto"><span class="marca-nome">{e(marca_nome(cfg))}</span><span class="marca-script">{e(cfg['nome'])}</span>{f'<span class="marca-comp">{e(cfg["marca_complemento"])}</span>' if cfg.get('marca_complemento') else ''}</span></a>
+    <a class="marca" href="{base}" aria-label="{e(cfg['nome'])}, página inicial"><img class="marca-logo" src="{base}assets/marca/logo-horizontal.svg" alt="{e(cfg['nome'])}" width="1480" height="262">{monograma("escuro", "marca-icone")}</a>
     <nav class="topo-nav" aria-label="Principal">
       <a href="{base}#imoveis">Imóveis</a>
       <a href="{base}#regioes">Regiões</a>
@@ -255,14 +241,11 @@ def _rodape(cfg, base, atualizado):
 <footer class="rodape" id="contato">
   <div class="rodape-in">
     <div class="assinatura">
-      {monograma("dourado", "assinatura-mono")}
+      <img class="assinatura-logo" src="{base}assets/marca/logo-completa-clara.svg" alt="{e(cfg['nome'])}" width="1336" height="852">
       <div class="assinatura-texto">
-        <p class="assinatura-nome">{e(marca_nome(cfg))}</p>
         <p class="assinatura-cargo">{e(cfg.get('marca_descricao') or 'Corretora de imóveis')}</p>
         {f'<p class="assinatura-creci">{e(cfg["creci"])}</p>' if cfg.get('creci') else ''}
         <span class="fio" aria-hidden="true"></span>
-        <p class="assinatura-script">{e(cfg['nome'])}</p>
-        {f'<p class="assinatura-comp">{e(cfg["marca_complemento"])}</p>' if cfg.get('marca_complemento') else ''}
         {redes_html}
       </div>
     </div>
@@ -272,7 +255,7 @@ def _rodape(cfg, base, atualizado):
     </div>
   </div>
   <div class="rodape-base">
-    <p>© {e(marca_nome(cfg))} · {e(cfg['nome'])}{creci}</p>
+    <p>© {e(cfg['nome'])}{creci}</p>
     {parceria}
     <p>Valores e disponibilidade sujeitos a confirmação. Atualizado em {e(atualizado)}.</p>
   </div>
@@ -351,18 +334,17 @@ def pagina_inicial(cfg, imoveis, atualizado):
     cartoes = "".join(card(p, base) for p in imoveis[:POR_PAGINA])
     icones_js = "".join(f'<span data-icone="{n}">{icone(n)}</span>' for n in ("area", "quartos", "vagas"))
     descricao = (f"{total} imóveis à venda na Grande Florianópolis: apartamentos, casas e terrenos. "
-                 f"Atendimento direto com a {cfg['nome']} pelo WhatsApp.")
+                 f"Atendimento direto com a {marca_nome(cfg)} pelo WhatsApp.")
     estilo_capa = f' style="--capa: url(\'{e(capa_url)}\')"' if capa_url else ""
 
-    return f"""{_cabeca(cfg, f"{marca_nome(cfg)} · {cfg['nome']} | Imóveis à venda na Grande Florianópolis", descricao, base, cfg['site_url'].rstrip('/') + '/', capa_url or None)}
+    return f"""{_cabeca(cfg, f"{cfg['nome']} | Imóveis à venda na Grande Florianópolis", descricao, base, cfg['site_url'].rstrip('/') + '/', capa_url or None)}
 <body class="pg-inicio">
 <a class="pular" href="#imoveis">Pular para os imóveis</a>
 {_topo(cfg, base)}
 <main>
   <section class="hero"{estilo_capa}>
     <div class="hero-in">
-      <p class="hero-assinatura">{e(cfg['nome'])}</p>
-      {f'<p class="hero-comp">{e(cfg["marca_complemento"])}</p>' if cfg.get('marca_complemento') else ''}
+      <img class="hero-logo" src="{base}assets/marca/logo-completa-clara.svg" alt="{e(cfg['nome'])}" width="1336" height="852">
       <h1>{e(cfg.get('frase_principal') or 'Encontre o seu imóvel na Grande Florianópolis')}</h1>
       <p class="hero-sub">{e(cfg.get('frase_apoio') or f'{total} imóveis à venda, de studios a casas de alto padrão.')}</p>
       <form class="busca" id="busca" action="{base}" role="search" aria-label="Buscar imóveis">
@@ -424,7 +406,7 @@ def pagina_inicial(cfg, imoveis, atualizado):
 def pagina_imovel(cfg, p, semelhantes, atualizado):
     base = "../../"
     url = link_pagina(cfg, p)
-    titulo_pg = f"{tipo_rotulo(p['tipo'])} em {p['bairro']}, {p['cidade']} | {marca_nome(cfg)} · {cfg['nome']}"
+    titulo_pg = f"{tipo_rotulo(p['tipo'])} em {p['bairro']}, {p['cidade']} | {cfg['nome']}"
     resumo = (p.get("descricao") or p["titulo"]).replace("\n", " ")[:155]
     fotos = p["fotos"]
 

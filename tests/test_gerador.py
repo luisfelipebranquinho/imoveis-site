@@ -185,5 +185,25 @@ class TestDescoberta(unittest.TestCase):
         self.assertFalse(any("evil.com" in u for u in visitados))
 
 
+
+
+class TesteConexaoCortada(unittest.TestCase):
+    def test_leitura_interrompida_vira_erro_sem_derrubar_o_build(self):
+        import http.client
+        from unittest import mock
+        from gerador import fonte
+
+        class Cortada:
+            status = 200
+            headers = {"Content-Type": "text/html"}
+            def read(self, n=-1):
+                raise http.client.IncompleteRead(b"parcial")
+
+        with mock.patch.object(fonte._abridor, "open", return_value=Cortada()), mock.patch.object(fonte.time, "sleep"):
+            r = fonte.baixar("https://www.gralhaimoveis.com.br/imovel/venda+casa/123/", exigir_anuncio=True)
+        self.assertEqual(r.tipo, "erro")
+        self.assertIn("interrompida", r.mensagem)
+
+
 if __name__ == "__main__":
     unittest.main()

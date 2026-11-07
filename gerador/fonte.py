@@ -61,7 +61,18 @@ class _SemRedirecionar(urllib.request.HTTPRedirectHandler):
 _abridor = urllib.request.build_opener(_SemRedirecionar)
 
 
-def baixar(url: str, tipos_aceitos=("text/html",), exigir_anuncio=False) -> Resposta:
+def baixar(url: str, tipos_aceitos=("text/html",), exigir_anuncio=False, tentativas=2) -> Resposta:
+    """Baixa uma página; falhas passageiras de rede (conexão cortada no meio) têm mais uma tentativa."""
+    for n in range(tentativas):
+        resp = _baixar_uma(url, tipos_aceitos, exigir_anuncio)
+        if resp.tipo != "erro" or not resp.mensagem.startswith(("Falha de rede", "Resposta interrompida")):
+            return resp
+        if n + 1 < tentativas:
+            time.sleep(1.5)
+    return resp
+
+
+def _baixar_uma(url, tipos_aceitos, exigir_anuncio) -> Resposta:
     atual, erro = validar_url(url, exigir_anuncio=exigir_anuncio)
     if erro:
         return Resposta("bloqueado", mensagem=erro)
@@ -97,11 +108,14 @@ def baixar(url: str, tipos_aceitos=("text/html",), exigir_anuncio=False) -> Resp
         tipo = (cabecalhos.get("Content-Type") or "").lower()
         if not any(t in tipo for t in tipos_aceitos):
             return Resposta("erro", mensagem=f"Conteúdo inesperado ({tipo or 'sem tipo'}).")
-        corpo = r.read(TAMANHO_MAXIMO + 1)
-        if len(corpo) > TAMANHO_MAXIMO:
-            return Resposta("erro", mensagem="Página maior que o limite.")
-        if (cabecalhos.get("Content-Encoding") or "").lower() == "gzip":
-            corpo = gzip.decompress(corpo)
+        try:
+            corpo = r.read(TAMANHO_MAXIMO + 1)
+            if len(corpo) > TAMANHO_MAXIMO:
+                return Resposta("erro", mensagem="Página maior que o limite.")
+            if (cabecalhos.get("Content-Encoding") or "").lower() == "gzip":
+                corpo = gzip.decompress(corpo)
+        except Exception as e:  # conexão cortada no meio da leitura (IncompleteRead), gzip truncado etc.
+            return Resposta("erro", mensagem=f"Resposta interrompida: {type(e).__name__}")
         return Resposta("ok", texto=corpo.decode("utf-8", errors="replace"), url=atual, status=200)
     return Resposta("erro", mensagem="Redirecionamentos demais.")
 

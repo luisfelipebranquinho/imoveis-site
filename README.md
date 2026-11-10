@@ -6,8 +6,8 @@ Tudo roda de graça no GitHub: todo dia às 06:17 o GitHub Actions lê os anúnc
 
 ## Endereços
 
-- Site: `https://luisfelipebranquinho.github.io/imoveis-site/`
-- Feed geral para portais: `https://luisfelipebranquinho.github.io/imoveis-site/vrsync.xml`
+- Site: `https://patricialopesimoveis.com.br/`
+- Feed geral para portais: `https://patricialopesimoveis.com.br/vrsync.xml`
 - Feeds segmentados: `.../vrsync/{slug}.xml` (configurados em `feeds.json`)
 - Relatório da última atualização: `.../dados/relatorio.json`
 
